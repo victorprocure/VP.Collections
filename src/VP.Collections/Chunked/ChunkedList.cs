@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace VP.Collections.Chunked
@@ -21,10 +22,24 @@ namespace VP.Collections.Chunked
         {
         }
 
-        public ChunkedList(int defaultSizeOfBucket, IEqualityComparer<T> comparer = null)
+        public ChunkedList(int defaultSizeOfBucket, IEqualityComparer<T> comparer = null) : this(default, defaultSizeOfBucket, comparer)
         {
+        }
+
+        public ChunkedList(int capacity, int defaultSizeOfBucket, IEqualityComparer<T> comparer)
+        {
+            if (defaultSizeOfBucket <= 0 && defaultSizeOfBucket != default)
+                throw new ArgumentOutOfRangeException(nameof(defaultSizeOfBucket));
+
+            if (capacity == default || capacity < 0)
+                _buckets = new List<List<T>>();
+            else
+                _buckets = new List<List<T>>(capacity);
+
+            if (defaultSizeOfBucket == default)
+                defaultSizeOfBucket = DefaultSizeOfBucket;
+
             _maxBucketItems = defaultSizeOfBucket / (typeof(T).IsValueType ? Marshal.SizeOf(typeof(T)) : IntPtr.Size);
-            _buckets = new List<List<T>>();
             _comparer = comparer ?? EqualityComparer<T>.Default;
         }
 
@@ -186,6 +201,17 @@ namespace VP.Collections.Chunked
             {
                 array[index] = item;
                 index++;
+            }
+        }
+
+        public void CopyTo(IList<T> chunkedList)
+        {
+            if (chunkedList == null)
+                throw new ArgumentNullException(nameof(chunkedList));
+
+            foreach (var item in this)
+            {
+                chunkedList.Add(item);
             }
         }
 
